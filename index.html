@@ -280,7 +280,6 @@
 
       <!-- FPA Result: Clean single section -->
       <div id="fpa-result" class="result-box hidden">
-        <!-- Rendered dynamically by JS: either single column or side-by-side grid -->
         <div id="fpa-result-content"></div>
       </div>
     </div>
@@ -309,7 +308,6 @@
 
       <!-- Gradient Result: Clean single section -->
       <div id="grad-result" class="result-box hidden">
-        <!-- Rendered dynamically by JS: either single column or side-by-side grid -->
         <div id="grad-result-content"></div>
       </div>
     </div>
@@ -371,7 +369,7 @@
 
       const resBox = document.getElementById('fpa-result');
 
-      // 1. Height and FPA given -> Calculate Distance (NM)
+      // 1. Height and FPA given -> Calculate Distance (NM) and show Gradient beside it!
       if (dist === null && height !== null && degree !== null) {
         if (degree === 0 || Math.tan(toRad(degree)) === 0) {
           resBox.classList.remove('hidden');
@@ -380,12 +378,13 @@
         }
         const distFt = height / Math.tan(toRad(degree));
         const calcDistNM = distFt / NM_TO_FT;
+        const gradVal = degree * 1.75;
 
         resBox.classList.remove('hidden');
-        renderSingle('fpa-result-content', 'Distance', fmt2(calcDistNM) + ' NM');
+        renderDual('fpa-result-content', 'Distance', fmt2(calcDistNM) + ' NM', 'Gradient', fmt2(gradVal) + '%');
         document.getElementById('fpa-dist').value = fmt2(calcDistNM);
       }
-      // 2. Distance (NM) and Height (ft) given -> Calculate FPA & add Gradient beside it!
+      // 2. Distance (NM) and Height (ft) given -> Calculate FPA and show Gradient beside it!
       else if (degree === null && dist !== null && height !== null) {
         if (dist === 0) {
           resBox.classList.remove('hidden');
@@ -400,13 +399,14 @@
         renderDual('fpa-result-content', 'FPA', fmt2(calcDeg) + '&deg;', 'Gradient', fmt2(gradVal) + '%');
         document.getElementById('fpa-degree').value = fmt2(calcDeg);
       }
-      // 3. Distance (NM) and FPA given -> Calculate Height (ft)
+      // 3. Distance (NM) and FPA given -> Calculate Height (ft) and show Gradient beside it!
       else if (height === null && dist !== null && degree !== null) {
         const distFt = dist * NM_TO_FT;
         const calcHeight = distFt * Math.tan(toRad(degree));
+        const gradVal = degree * 1.75;
 
         resBox.classList.remove('hidden');
-        renderSingle('fpa-result-content', 'Height', fmt2(calcHeight) + ' ft');
+        renderDual('fpa-result-content', 'Height', fmt2(calcHeight) + ' ft', 'Gradient', fmt2(gradVal) + '%');
         document.getElementById('fpa-height').value = fmt2(calcHeight);
       }
       else if (dist !== null && height !== null && degree !== null) {
@@ -436,15 +436,16 @@
 
       const resBox = document.getElementById('grad-result');
 
-      // 1. GS and Gradient provided -> Calculate ROC
+      // 1. GS and Gradient provided -> Calculate ROC and show FPA beside it!
       if (roc === null && gs !== null && gradient !== null) {
         const calcRoc = (gs * gradient * 101.27) / 100;
+        const fpaVal = gradient * 0.57;
 
         resBox.classList.remove('hidden');
-        renderSingle('grad-result-content', 'Rate of Climb (ROC)', fmt2(calcRoc) + ' FPM');
+        renderDual('grad-result-content', 'ROC', fmt2(calcRoc) + ' FPM', 'FPA', fmt2(fpaVal) + '&deg;');
         document.getElementById('grad-roc').value = fmt2(calcRoc);
       }
-      // 2. GS and ROC provided -> Calculate Gradient (%) & add FPA beside it!
+      // 2. GS and ROC provided -> Calculate Gradient (%) and show FPA beside it!
       else if (gradient === null && gs !== null && roc !== null) {
         if (gs === 0) {
           resBox.classList.remove('hidden');
@@ -452,13 +453,13 @@
           return;
         }
         const calcGrad = (roc * 100) / (gs * 101.27);
-        const autoFpa = calcGrad * 0.57;
+        const fpaVal = calcGrad * 0.57;
 
         resBox.classList.remove('hidden');
-        renderDual('grad-result-content', 'Gradient', fmt2(calcGrad) + '%', 'FPA', fmt2(autoFpa) + '&deg;');
+        renderDual('grad-result-content', 'Gradient', fmt2(calcGrad) + '%', 'FPA', fmt2(fpaVal) + '&deg;');
         document.getElementById('grad-percent').value = fmt2(calcGrad);
       }
-      // 3. Gradient and ROC provided -> Calculate GS
+      // 3. Gradient and ROC provided -> Calculate GS and show FPA beside it!
       else if (gs === null && gradient !== null && roc !== null) {
         if (gradient === 0) {
           resBox.classList.remove('hidden');
@@ -466,9 +467,10 @@
           return;
         }
         const calcGs = (roc * 100) / (gradient * 101.27);
+        const fpaVal = gradient * 0.57;
 
         resBox.classList.remove('hidden');
-        renderSingle('grad-result-content', 'Ground Speed (GS)', fmt2(calcGs) + ' kts');
+        renderDual('grad-result-content', 'GS', fmt2(calcGs) + ' kts', 'FPA', fmt2(fpaVal) + '&deg;');
         document.getElementById('grad-gs').value = fmt2(calcGs);
       }
       else if (gs !== null && gradient !== null && roc !== null) {
