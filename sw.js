@@ -1,4 +1,4 @@
-﻿const CACHE_NAME = 'aviation-calc-v2';
+﻿const CACHE_NAME = 'aviation-calc-v3';
 const ASSETS = [
   './',
   './index.html',

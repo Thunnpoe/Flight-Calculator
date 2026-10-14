@@ -213,6 +213,13 @@
       font-weight: 800;
       color: #0369a1;
     }
+
+    .result-sub {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #0284c7;
+      margin-top: 2px;
+    }
   </style>
   <link rel="manifest" href="manifest.json">
   <script>
@@ -238,7 +245,7 @@
     <!-- Tab 1: FPA -->
     <div id="tab-fpa" class="calc-card active">
       <div class="input-group">
-        <label for="fpa-dist">Distance <span class="unit">(NM / ft)</span></label>
+        <label for="fpa-dist">Distance <span class="unit">(NM)</span></label>
         <input type="number" step="any" id="fpa-dist" placeholder="Leave empty if unknown">
       </div>
 
@@ -260,6 +267,7 @@
       <div id="fpa-result" class="result-box hidden">
         <div class="result-title" id="fpa-res-title">Result</div>
         <div class="result-value" id="fpa-res-val">--</div>
+        <div class="result-sub" id="fpa-res-sub"></div>
       </div>
     </div>
 
@@ -288,6 +296,7 @@
       <div id="grad-result" class="result-box hidden">
         <div class="result-title" id="grad-res-title">Result</div>
         <div class="result-value" id="grad-res-val">--</div>
+        <div class="result-sub" id="grad-res-sub"></div>
       </div>
     </div>
   </div>
@@ -306,6 +315,7 @@
       }
     }
 
+    const NM_TO_FT = 6076;
     const fmt2 = num => (Math.round((num + Number.EPSILON) * 100) / 100).toFixed(2);
     const toRad = deg => (deg * Math.PI) / 180;
     const toDeg = rad => (rad * 180) / Math.PI;
@@ -322,36 +332,62 @@
       const resBox = document.getElementById('fpa-result');
       const resTitle = document.getElementById('fpa-res-title');
       const resVal = document.getElementById('fpa-res-val');
+      const resSub = document.getElementById('fpa-res-sub');
 
       resBox.classList.remove('hidden');
+      resSub.textContent = '';
 
+      // 1. Height and FPA given -> Calculate Distance (NM)
+      // Distance_ft = Height / tan(FPA) -> Distance_NM = Distance_ft / 6076
       if (dist === null && height !== null && degree !== null) {
         if (degree === 0 || Math.tan(toRad(degree)) === 0) {
           resTitle.textContent = "Error";
           resVal.textContent = "Invalid FPA";
           return;
         }
-        const calcDist = height / Math.tan(toRad(degree));
+        const distFt = height / Math.tan(toRad(degree));
+        const calcDistNM = distFt / NM_TO_FT;
+        const gradVal = degree * 1.75;
+
         resTitle.textContent = "Distance";
-        resVal.textContent = fmt2(calcDist);
-        document.getElementById('fpa-dist').value = fmt2(calcDist);
+        resVal.textContent = fmt2(calcDistNM) + " NM";
+        resSub.textContent = "Gradient: " + fmt2(gradVal) + "%";
+
+        document.getElementById('fpa-dist').value = fmt2(calcDistNM);
+        document.getElementById('grad-percent').value = fmt2(gradVal);
       }
+      // 2. Distance (NM) and Height (ft) given -> Calculate FPA (deg)
+      // Distance_ft = Distance_NM * 6076 -> FPA = atan(Height / Distance_ft)
       else if (degree === null && dist !== null && height !== null) {
         if (dist === 0) {
           resTitle.textContent = "Error";
           resVal.textContent = "Invalid Distance";
           return;
         }
-        const calcDeg = toDeg(Math.atan(height / dist));
+        const distFt = dist * NM_TO_FT;
+        const calcDeg = toDeg(Math.atan(height / distFt));
+        const gradVal = calcDeg * 1.75;
+
         resTitle.textContent = "FPA";
         resVal.innerHTML = fmt2(calcDeg) + "&deg;";
+        resSub.textContent = "Gradient: " + fmt2(gradVal) + "%";
+
         document.getElementById('fpa-degree').value = fmt2(calcDeg);
+        document.getElementById('grad-percent').value = fmt2(gradVal);
       }
+      // 3. Distance (NM) and FPA (deg) given -> Calculate Height (ft)
+      // Distance_ft = Distance_NM * 6076 -> Height = Distance_ft * tan(FPA)
       else if (height === null && dist !== null && degree !== null) {
-        const calcHeight = dist * Math.tan(toRad(degree));
+        const distFt = dist * NM_TO_FT;
+        const calcHeight = distFt * Math.tan(toRad(degree));
+        const gradVal = degree * 1.75;
+
         resTitle.textContent = "Height";
-        resVal.textContent = fmt2(calcHeight);
+        resVal.textContent = fmt2(calcHeight) + " ft";
+        resSub.textContent = "Gradient: " + fmt2(gradVal) + "%";
+
         document.getElementById('fpa-height').value = fmt2(calcHeight);
+        document.getElementById('grad-percent').value = fmt2(gradVal);
       }
       else if (dist !== null && height !== null && degree !== null) {
         resTitle.textContent = "Notice";
@@ -366,6 +402,8 @@
       document.getElementById('fpa-dist').value = '';
       document.getElementById('fpa-height').value = '';
       document.getElementById('fpa-degree').value = '';
+      const resSub = document.getElementById('fpa-res-sub');
+      if (resSub) resSub.textContent = '';
       document.getElementById('fpa-result').classList.add('hidden');
     }
 
@@ -375,19 +413,25 @@
       const rocInput = document.getElementById('grad-roc').value.trim();
 
       const gs = gsInput !== '' ? parseFloat(gsInput) : null;
-      const gradient = gradInput !== '' ? parseFloat(gradInput) : null;
+      let gradient = gradInput !== '' ? parseFloat(gradInput) : null;
       const roc = rocInput !== '' ? parseFloat(rocInput) : null;
 
       const resBox = document.getElementById('grad-result');
       const resTitle = document.getElementById('grad-res-title');
       const resVal = document.getElementById('grad-res-val');
+      const resSub = document.getElementById('grad-res-sub');
 
       resBox.classList.remove('hidden');
+      resSub.textContent = '';
+
+      let calculatedGrad = null;
 
       // 1. GS and Gradient provided -> Calculate ROC
       // ROC = (GS * gradient * 101.27) / 100
       if (roc === null && gs !== null && gradient !== null) {
         const calcRoc = (gs * gradient * 101.27) / 100;
+        calculatedGrad = gradient;
+
         resTitle.textContent = "Rate of Climb (ROC)";
         resVal.textContent = fmt2(calcRoc) + " FPM";
         document.getElementById('grad-roc').value = fmt2(calcRoc);
@@ -400,10 +444,10 @@
           resVal.textContent = "Invalid GS";
           return;
         }
-        const calcGrad = (roc * 100) / (gs * 101.27);
+        calculatedGrad = (roc * 100) / (gs * 101.27);
         resTitle.textContent = "Gradient";
-        resVal.textContent = fmt2(calcGrad) + "%";
-        document.getElementById('grad-percent').value = fmt2(calcGrad);
+        resVal.textContent = fmt2(calculatedGrad) + "%";
+        document.getElementById('grad-percent').value = fmt2(calculatedGrad);
       }
       // 3. Gradient and ROC provided -> Calculate GS
       // GS = (ROC * 100) / (Gradient * 101.27)
@@ -413,6 +457,7 @@
           resVal.textContent = "Invalid Gradient";
           return;
         }
+        calculatedGrad = gradient;
         const calcGs = (roc * 100) / (gradient * 101.27);
         resTitle.textContent = "Ground Speed (GS)";
         resVal.textContent = fmt2(calcGs) + " kts";
@@ -421,9 +466,18 @@
       else if (gs !== null && gradient !== null && roc !== null) {
         resTitle.textContent = "Notice";
         resVal.textContent = "Clear 1 value";
+        return;
       } else {
         resTitle.textContent = "Notice";
         resVal.textContent = "Fill 2 values";
+        return;
+      }
+
+      // If gradient was calculated/known, also generate FPA = Gradient * 0.57
+      if (calculatedGrad !== null) {
+        const autoFpa = calculatedGrad * 0.57;
+        resSub.innerHTML = "FPA: " + fmt2(autoFpa) + "&deg;";
+        document.getElementById('fpa-degree').value = fmt2(autoFpa);
       }
     }
 
@@ -431,6 +485,8 @@
       document.getElementById('grad-gs').value = '';
       document.getElementById('grad-percent').value = '';
       document.getElementById('grad-roc').value = '';
+      const resSub = document.getElementById('grad-res-sub');
+      if (resSub) resSub.textContent = '';
       document.getElementById('grad-result').classList.add('hidden');
     }
   </script>

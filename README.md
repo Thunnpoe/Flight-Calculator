@@ -1,19 +1,21 @@
-# ✈️ Flight Calculator
+﻿# ✈️ Flight Calculator
 
 A lightweight, offline-ready mobile web application (PWA) for quick aviation flight path and climb calculations.
 
 ## Features
 
 ### 1. FPA (Flight Path Angle) Solver
-Enter any **two** known values to calculate the remaining parameter:
-- **Distance** (`NM` / `ft`)
-- **Height** (`ft`)
-- **FPA** (`°`)
+- **Distance input**: In **NM** (Nautical Miles). Automatically converts to feet in the background using `1 NM = 6076 ft`.
+- **Height input**: In **ft**.
+- **FPA input**: In **degrees (°)**.
+- **Auto-generates Gradient**: Whenever FPA is calculated or solved, **Gradient (%)** is automatically computed:
+  $$\text{Gradient (\%)} = \text{FPA} \times 1.75$$
 
 **Formulas:**
-- $\text{Distance} = \frac{\text{Height}}{\tan(\text{FPA})}$
-- $\text{FPA} = \arctan\left(\frac{\text{Height}}{\text{Distance}}\right)$
-- $\text{Height} = \text{Distance} \times \tan(\text{FPA})$
+- $\text{Distance (ft)} = \text{Distance (NM)} \times 6076$
+- $\text{Distance (NM)} = \frac{\text{Height (ft)}}{\tan(\text{FPA}) \times 6076}$
+- $\text{FPA} = \arctan\left(\frac{\text{Height (ft)}}{\text{Distance (NM)} \times 6076}\right)$
+- $\text{Height (ft)} = \text{Distance (NM)} \times 6076 \times \tan(\text{FPA})$
 
 ---
 
@@ -22,6 +24,8 @@ Enter any **two** known values to calculate the remaining parameter:
 - **Ground Speed (GS)** (`kts`)
 - **Gradient** (`%`)
 - **Rate of Climb (ROC)** (`FPM`)
+- **Auto-generates FPA**: Whenever Gradient is calculated or solved, **FPA (°)** is automatically computed:
+  $$\text{FPA} = \text{Gradient} \times 0.57$$
 
 **Formulas:**
 - $\text{ROC} = \frac{\text{GS} \times \text{Gradient} \times 101.27}{100}$
