@@ -402,11 +402,13 @@
         const gradVal = calcDeg * 1.75;
 
         resBox.classList.remove('hidden');
-        primaryBlock.style.display = 'none'; // Only dual FPA & Gradient needed
+        primaryBlock.style.display = 'flex';
         dualGrid.style.display = 'grid';
-        dualGrid.style.borderTop = 'none';
-        dualGrid.style.paddingTop = '0';
+        dualGrid.style.borderTop = '1px dashed var(--sky-border)';
+        dualGrid.style.paddingTop = '10px';
 
+        resTitle.textContent = "FPA";
+        resVal.innerHTML = fmt2(calcDeg) + "&deg;";
         dualFpa.innerHTML = fmt2(calcDeg) + "&deg;";
         dualGrad.textContent = fmt2(gradVal) + "%";
 
@@ -492,11 +494,13 @@
         resolvedGrad = (roc * 100) / (gs * 101.27);
 
         resBox.classList.remove('hidden');
-        primaryBlock.style.display = 'none'; // Only dual FPA & Gradient needed
+        primaryBlock.style.display = 'flex';
         dualGrid.style.display = 'grid';
-        dualGrid.style.borderTop = 'none';
-        dualGrid.style.paddingTop = '0';
+        dualGrid.style.borderTop = '1px dashed var(--sky-border)';
+        dualGrid.style.paddingTop = '10px';
 
+        resTitle.textContent = "Gradient";
+        resVal.textContent = fmt2(resolvedGrad) + "%";
         document.getElementById('grad-percent').value = fmt2(resolvedGrad);
       }
       // 3. Gradient and ROC provided -> Calculate GS
