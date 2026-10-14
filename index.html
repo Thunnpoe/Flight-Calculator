@@ -203,9 +203,17 @@
 
     .result-grid-row {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: 1.15fr auto 1fr;
+      align-items: center;
       gap: 16px;
       width: 100%;
+    }
+
+    .result-divider {
+      width: 1px;
+      height: 44px;
+      background: var(--sky-border);
+      border-right: 1px dashed var(--sky);
     }
 
     .result-single-col {
@@ -229,10 +237,18 @@
     }
 
     .result-value {
-      font-size: 1.8rem;
+      font-size: 1.55rem;
       font-weight: 800;
       color: #0369a1;
       line-height: 1.2;
+      white-space: nowrap;
+    }
+
+    .result-unit {
+      font-size: 0.95rem;
+      font-weight: 600;
+      color: #0284c7;
+      margin-left: 3px;
     }
   </style>
   <link rel="manifest" href="manifest.json">
@@ -343,17 +359,18 @@
       `;
     }
 
-    function renderDual(containerId, title1, val1, title2, val2) {
+    function renderDual(containerId, title1, num1, unit1, title2, num2, unit2) {
       const el = document.getElementById(containerId);
       el.className = 'result-grid-row';
       el.innerHTML = `
         <div class="result-item">
           <div class="result-title">${title1}</div>
-          <div class="result-value">${val1}</div>
+          <div class="result-value">${num1}<span class="result-unit">${unit1}</span></div>
         </div>
+        <div class="result-divider"></div>
         <div class="result-item">
           <div class="result-title">${title2}</div>
-          <div class="result-value">${val2}</div>
+          <div class="result-value">${num2}<span class="result-unit">${unit2}</span></div>
         </div>
       `;
     }
@@ -381,7 +398,7 @@
         const gradVal = degree * 1.75;
 
         resBox.classList.remove('hidden');
-        renderDual('fpa-result-content', 'Distance', fmt2(calcDistNM) + ' NM', 'Gradient', fmt2(gradVal) + '%');
+        renderDual('fpa-result-content', 'Distance', fmt2(calcDistNM), 'NM', 'Gradient', fmt2(gradVal), '%');
         document.getElementById('fpa-dist').value = fmt2(calcDistNM);
       }
       // 2. Distance (NM) and Height (ft) given -> Calculate FPA and show Gradient beside it!
@@ -396,7 +413,7 @@
         const gradVal = calcDeg * 1.75;
 
         resBox.classList.remove('hidden');
-        renderDual('fpa-result-content', 'FPA', fmt2(calcDeg) + '&deg;', 'Gradient', fmt2(gradVal) + '%');
+        renderDual('fpa-result-content', 'FPA', fmt2(calcDeg), '&deg;', 'Gradient', fmt2(gradVal), '%');
         document.getElementById('fpa-degree').value = fmt2(calcDeg);
       }
       // 3. Distance (NM) and FPA given -> Calculate Height (ft) and show Gradient beside it!
@@ -406,7 +423,7 @@
         const gradVal = degree * 1.75;
 
         resBox.classList.remove('hidden');
-        renderDual('fpa-result-content', 'Height', fmt2(calcHeight) + ' ft', 'Gradient', fmt2(gradVal) + '%');
+        renderDual('fpa-result-content', 'Height', fmt2(calcHeight), 'ft', 'Gradient', fmt2(gradVal), '%');
         document.getElementById('fpa-height').value = fmt2(calcHeight);
       }
       else if (dist !== null && height !== null && degree !== null) {
@@ -442,7 +459,7 @@
         const fpaVal = gradient * 0.57;
 
         resBox.classList.remove('hidden');
-        renderDual('grad-result-content', 'ROC', fmt2(calcRoc) + ' FPM', 'FPA', fmt2(fpaVal) + '&deg;');
+        renderDual('grad-result-content', 'ROC', fmt2(calcRoc), 'FPM', 'FPA', fmt2(fpaVal), '&deg;');
         document.getElementById('grad-roc').value = fmt2(calcRoc);
       }
       // 2. GS and ROC provided -> Calculate Gradient (%) and show FPA beside it!
@@ -456,7 +473,7 @@
         const fpaVal = calcGrad * 0.57;
 
         resBox.classList.remove('hidden');
-        renderDual('grad-result-content', 'Gradient', fmt2(calcGrad) + '%', 'FPA', fmt2(fpaVal) + '&deg;');
+        renderDual('grad-result-content', 'Gradient', fmt2(calcGrad), '%', 'FPA', fmt2(fpaVal), '&deg;');
         document.getElementById('grad-percent').value = fmt2(calcGrad);
       }
       // 3. Gradient and ROC provided -> Calculate GS and show FPA beside it!
@@ -470,7 +487,7 @@
         const fpaVal = gradient * 0.57;
 
         resBox.classList.remove('hidden');
-        renderDual('grad-result-content', 'GS', fmt2(calcGs) + ' kts', 'FPA', fmt2(fpaVal) + '&deg;');
+        renderDual('grad-result-content', 'GS', fmt2(calcGs), 'kts', 'FPA', fmt2(fpaVal), '&deg;');
         document.getElementById('grad-gs').value = fmt2(calcGs);
       }
       else if (gs !== null && gradient !== null && roc !== null) {
