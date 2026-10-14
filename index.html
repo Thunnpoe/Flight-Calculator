@@ -185,19 +185,26 @@
       background: #e2e8f0;
     }
 
+    /* Result Box: Side-by-Side Dual Display */
     .result-box {
       margin-top: 4px;
-      padding: 16px;
+      padding: 16px 18px;
       background: var(--sky-soft);
       border: 1.5px solid var(--sky);
       border-radius: 12px;
       display: flex;
       flex-direction: column;
-      gap: 4px;
+      gap: 12px;
     }
 
     .result-box.hidden {
       display: none;
+    }
+
+    .result-item {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
     }
 
     .result-title {
@@ -212,13 +219,15 @@
       font-size: 1.8rem;
       font-weight: 800;
       color: #0369a1;
+      line-height: 1.2;
     }
 
-    .result-sub {
-      font-size: 0.95rem;
-      font-weight: 600;
-      color: #0284c7;
-      margin-top: 2px;
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      padding-top: 10px;
+      border-top: 1px dashed var(--sky-border);
     }
   </style>
   <link rel="manifest" href="manifest.json">
@@ -265,9 +274,21 @@
       </div>
 
       <div id="fpa-result" class="result-box hidden">
-        <div class="result-title" id="fpa-res-title">Result</div>
-        <div class="result-value" id="fpa-res-val">--</div>
-        <div class="result-sub" id="fpa-res-sub"></div>
+        <div id="fpa-primary-block" class="result-item">
+          <div class="result-title" id="fpa-res-title">Result</div>
+          <div class="result-value" id="fpa-res-val">--</div>
+        </div>
+
+        <div id="fpa-dual-grid" class="result-grid">
+          <div class="result-item">
+            <div class="result-title">FPA</div>
+            <div class="result-value" id="fpa-dual-fpa">--</div>
+          </div>
+          <div class="result-item">
+            <div class="result-title">Gradient</div>
+            <div class="result-value" id="fpa-dual-grad">--</div>
+          </div>
+        </div>
       </div>
     </div>
 
@@ -294,9 +315,21 @@
       </div>
 
       <div id="grad-result" class="result-box hidden">
-        <div class="result-title" id="grad-res-title">Result</div>
-        <div class="result-value" id="grad-res-val">--</div>
-        <div class="result-sub" id="grad-res-sub"></div>
+        <div id="grad-primary-block" class="result-item">
+          <div class="result-title" id="grad-res-title">Result</div>
+          <div class="result-value" id="grad-res-val">--</div>
+        </div>
+
+        <div id="grad-dual-grid" class="result-grid">
+          <div class="result-item">
+            <div class="result-title">FPA</div>
+            <div class="result-value" id="grad-dual-fpa">--</div>
+          </div>
+          <div class="result-item">
+            <div class="result-title">Gradient</div>
+            <div class="result-value" id="grad-dual-grad">--</div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
@@ -330,80 +363,91 @@
       const degree = degreeInput !== '' ? parseFloat(degreeInput) : null;
 
       const resBox = document.getElementById('fpa-result');
+      const primaryBlock = document.getElementById('fpa-primary-block');
       const resTitle = document.getElementById('fpa-res-title');
       const resVal = document.getElementById('fpa-res-val');
-      const resSub = document.getElementById('fpa-res-sub');
-
-      resBox.classList.remove('hidden');
-      resSub.textContent = '';
+      const dualGrid = document.getElementById('fpa-dual-grid');
+      const dualFpa = document.getElementById('fpa-dual-fpa');
+      const dualGrad = document.getElementById('fpa-dual-grad');
 
       // 1. Height and FPA given -> Calculate Distance (NM)
-      // Distance_ft = Height / tan(FPA) -> Distance_NM = Distance_ft / 6076
       if (dist === null && height !== null && degree !== null) {
         if (degree === 0 || Math.tan(toRad(degree)) === 0) {
-          resTitle.textContent = "Error";
-          resVal.textContent = "Invalid FPA";
+          showError(resBox, primaryBlock, dualGrid, "Error", "Invalid FPA");
           return;
         }
         const distFt = height / Math.tan(toRad(degree));
         const calcDistNM = distFt / NM_TO_FT;
         const gradVal = degree * 1.75;
 
+        resBox.classList.remove('hidden');
+        primaryBlock.style.display = 'flex';
+        dualGrid.style.display = 'grid';
+
         resTitle.textContent = "Distance";
         resVal.textContent = fmt2(calcDistNM) + " NM";
-        resSub.textContent = "Gradient: " + fmt2(gradVal) + "%";
+        dualFpa.innerHTML = fmt2(degree) + "&deg;";
+        dualGrad.textContent = fmt2(gradVal) + "%";
 
         document.getElementById('fpa-dist').value = fmt2(calcDistNM);
-        document.getElementById('grad-percent').value = fmt2(gradVal);
       }
-      // 2. Distance (NM) and Height (ft) given -> Calculate FPA (deg)
-      // Distance_ft = Distance_NM * 6076 -> FPA = atan(Height / Distance_ft)
+      // 2. Distance (NM) and Height (ft) given -> Calculate FPA
       else if (degree === null && dist !== null && height !== null) {
         if (dist === 0) {
-          resTitle.textContent = "Error";
-          resVal.textContent = "Invalid Distance";
+          showError(resBox, primaryBlock, dualGrid, "Error", "Invalid Distance");
           return;
         }
         const distFt = dist * NM_TO_FT;
         const calcDeg = toDeg(Math.atan(height / distFt));
         const gradVal = calcDeg * 1.75;
 
-        resTitle.textContent = "FPA";
-        resVal.innerHTML = fmt2(calcDeg) + "&deg;";
-        resSub.textContent = "Gradient: " + fmt2(gradVal) + "%";
+        resBox.classList.remove('hidden');
+        primaryBlock.style.display = 'none'; // Only dual FPA & Gradient needed
+        dualGrid.style.display = 'grid';
+        dualGrid.style.borderTop = 'none';
+        dualGrid.style.paddingTop = '0';
+
+        dualFpa.innerHTML = fmt2(calcDeg) + "&deg;";
+        dualGrad.textContent = fmt2(gradVal) + "%";
 
         document.getElementById('fpa-degree').value = fmt2(calcDeg);
-        document.getElementById('grad-percent').value = fmt2(gradVal);
       }
-      // 3. Distance (NM) and FPA (deg) given -> Calculate Height (ft)
-      // Distance_ft = Distance_NM * 6076 -> Height = Distance_ft * tan(FPA)
+      // 3. Distance (NM) and FPA given -> Calculate Height (ft)
       else if (height === null && dist !== null && degree !== null) {
         const distFt = dist * NM_TO_FT;
         const calcHeight = distFt * Math.tan(toRad(degree));
         const gradVal = degree * 1.75;
 
+        resBox.classList.remove('hidden');
+        primaryBlock.style.display = 'flex';
+        dualGrid.style.display = 'grid';
+
         resTitle.textContent = "Height";
         resVal.textContent = fmt2(calcHeight) + " ft";
-        resSub.textContent = "Gradient: " + fmt2(gradVal) + "%";
+        dualFpa.innerHTML = fmt2(degree) + "&deg;";
+        dualGrad.textContent = fmt2(gradVal) + "%";
 
         document.getElementById('fpa-height').value = fmt2(calcHeight);
-        document.getElementById('grad-percent').value = fmt2(gradVal);
       }
       else if (dist !== null && height !== null && degree !== null) {
-        resTitle.textContent = "Notice";
-        resVal.textContent = "Clear 1 value";
+        showError(resBox, primaryBlock, dualGrid, "Notice", "Clear 1 value");
       } else {
-        resTitle.textContent = "Notice";
-        resVal.textContent = "Fill 2 values";
+        showError(resBox, primaryBlock, dualGrid, "Notice", "Fill 2 values");
       }
+    }
+
+    function showError(box, primary, dual, title, msg) {
+      box.classList.remove('hidden');
+      primary.style.display = 'flex';
+      dual.style.display = 'none';
+      document.getElementById('fpa-res-title').textContent = title;
+      document.getElementById('fpa-res-val').textContent = msg;
     }
 
     function clearFPA() {
       document.getElementById('fpa-dist').value = '';
       document.getElementById('fpa-height').value = '';
       document.getElementById('fpa-degree').value = '';
-      const resSub = document.getElementById('fpa-res-sub');
-      if (resSub) resSub.textContent = '';
       document.getElementById('fpa-result').classList.add('hidden');
     }
 
@@ -417,76 +461,88 @@
       const roc = rocInput !== '' ? parseFloat(rocInput) : null;
 
       const resBox = document.getElementById('grad-result');
+      const primaryBlock = document.getElementById('grad-primary-block');
       const resTitle = document.getElementById('grad-res-title');
       const resVal = document.getElementById('grad-res-val');
-      const resSub = document.getElementById('grad-res-sub');
+      const dualGrid = document.getElementById('grad-dual-grid');
+      const dualFpa = document.getElementById('grad-dual-fpa');
+      const dualGrad = document.getElementById('grad-dual-grad');
 
-      resBox.classList.remove('hidden');
-      resSub.textContent = '';
-
-      let calculatedGrad = null;
+      let resolvedGrad = null;
 
       // 1. GS and Gradient provided -> Calculate ROC
-      // ROC = (GS * gradient * 101.27) / 100
       if (roc === null && gs !== null && gradient !== null) {
         const calcRoc = (gs * gradient * 101.27) / 100;
-        calculatedGrad = gradient;
+        resolvedGrad = gradient;
+
+        resBox.classList.remove('hidden');
+        primaryBlock.style.display = 'flex';
+        dualGrid.style.display = 'grid';
 
         resTitle.textContent = "Rate of Climb (ROC)";
         resVal.textContent = fmt2(calcRoc) + " FPM";
         document.getElementById('grad-roc').value = fmt2(calcRoc);
       }
       // 2. GS and ROC provided -> Calculate Gradient (%)
-      // Gradient = (ROC * 100) / (GS * 101.27)
       else if (gradient === null && gs !== null && roc !== null) {
         if (gs === 0) {
-          resTitle.textContent = "Error";
-          resVal.textContent = "Invalid GS";
+          showGradError(resBox, primaryBlock, dualGrid, "Error", "Invalid GS");
           return;
         }
-        calculatedGrad = (roc * 100) / (gs * 101.27);
-        resTitle.textContent = "Gradient";
-        resVal.textContent = fmt2(calculatedGrad) + "%";
-        document.getElementById('grad-percent').value = fmt2(calculatedGrad);
+        resolvedGrad = (roc * 100) / (gs * 101.27);
+
+        resBox.classList.remove('hidden');
+        primaryBlock.style.display = 'none'; // Only dual FPA & Gradient needed
+        dualGrid.style.display = 'grid';
+        dualGrid.style.borderTop = 'none';
+        dualGrid.style.paddingTop = '0';
+
+        document.getElementById('grad-percent').value = fmt2(resolvedGrad);
       }
       // 3. Gradient and ROC provided -> Calculate GS
-      // GS = (ROC * 100) / (Gradient * 101.27)
       else if (gs === null && gradient !== null && roc !== null) {
         if (gradient === 0) {
-          resTitle.textContent = "Error";
-          resVal.textContent = "Invalid Gradient";
+          showGradError(resBox, primaryBlock, dualGrid, "Error", "Invalid Gradient");
           return;
         }
-        calculatedGrad = gradient;
+        resolvedGrad = gradient;
         const calcGs = (roc * 100) / (gradient * 101.27);
+
+        resBox.classList.remove('hidden');
+        primaryBlock.style.display = 'flex';
+        dualGrid.style.display = 'grid';
+
         resTitle.textContent = "Ground Speed (GS)";
         resVal.textContent = fmt2(calcGs) + " kts";
         document.getElementById('grad-gs').value = fmt2(calcGs);
       }
       else if (gs !== null && gradient !== null && roc !== null) {
-        resTitle.textContent = "Notice";
-        resVal.textContent = "Clear 1 value";
+        showGradError(resBox, primaryBlock, dualGrid, "Notice", "Clear 1 value");
         return;
       } else {
-        resTitle.textContent = "Notice";
-        resVal.textContent = "Fill 2 values";
+        showGradError(resBox, primaryBlock, dualGrid, "Notice", "Fill 2 values");
         return;
       }
 
-      // If gradient was calculated/known, also generate FPA = Gradient * 0.57
-      if (calculatedGrad !== null) {
-        const autoFpa = calculatedGrad * 0.57;
-        resSub.innerHTML = "FPA: " + fmt2(autoFpa) + "&deg;";
-        document.getElementById('fpa-degree').value = fmt2(autoFpa);
+      if (resolvedGrad !== null) {
+        const fpaVal = resolvedGrad * 0.57;
+        dualFpa.innerHTML = fmt2(fpaVal) + "&deg;";
+        dualGrad.textContent = fmt2(resolvedGrad) + "%";
       }
+    }
+
+    function showGradError(box, primary, dual, title, msg) {
+      box.classList.remove('hidden');
+      primary.style.display = 'flex';
+      dual.style.display = 'none';
+      document.getElementById('grad-res-title').textContent = title;
+      document.getElementById('grad-res-val').textContent = msg;
     }
 
     function clearGradient() {
       document.getElementById('grad-gs').value = '';
       document.getElementById('grad-percent').value = '';
       document.getElementById('grad-roc').value = '';
-      const resSub = document.getElementById('grad-res-sub');
-      if (resSub) resSub.textContent = '';
       document.getElementById('grad-result').classList.add('hidden');
     }
   </script>
